@@ -17,34 +17,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 @Composable
 fun CyclingScreen(onNavigate: () -> Unit) {
 
     val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val scope = rememberCoroutineScope()
+    val distanceCyclingExistante by dataStoreManager.distanceTotaleCycling.collectAsState(initial = 0.0)
 
     var is_cycling by remember { mutableStateOf(false) }
     // Les variables qui s'affichent à l'écran
@@ -71,13 +61,12 @@ fun CyclingScreen(onNavigate: () -> Unit) {
             }
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.bike),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    Box(
+        modifier = Modifier.fillMaxSize()
+        .fillMaxSize()
+        .background(Color(0xFFBA7517))
+    ) {
+
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -85,23 +74,22 @@ fun CyclingScreen(onNavigate: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // 🟦 Carré blanc autour des stats
             Box(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(0.8f)
                     .background(Color.White, shape = RoundedCornerShape(16.dp))
-                    .padding(16.dp) // espace intérieur
+                    .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Distance : ${distanceTotale / 1000} km",
+                        text = "Distance : ${"%.1f".format(distanceTotale / 1000)} km",
                         fontSize = 20.sp,
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Vitesse : ${60 / vitesse} min/km",
+                        text = if (vitesse > 0 && vitesse < 12) "Vitesse : ${"%.1f".format(60 / vitesse)} min/km" else "Vitesse : -- min/km",
                         fontSize = 20.sp,
                         color = Color.Black
                     )
@@ -116,8 +104,11 @@ fun CyclingScreen(onNavigate: () -> Unit) {
                     permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 } else {
                     gps.stopTracking()
-                    onNavigate()
                     is_cycling = false
+                    scope.launch {
+                        dataStoreManager.sauvegarderDistanceCycling(distanceTotale + distanceCyclingExistante)
+                    }
+                    onNavigate()
                 }
             }) {
                 Text(if (!is_cycling) "Démarrer l'activité" else "Terminer l'activité")

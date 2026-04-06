@@ -65,21 +65,21 @@ fun AccueilScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "Running", fontSize = 24.sp, color = Color(0xFF1D9E75))
-                    Text(text = "${distanceRunning / 1000} km", fontSize = 16.sp)
+                    Text(text = "${"%.1f".format(distanceRunning / 1000)} km", fontSize = 16.sp)
                 }
 
-                Text(text = " | ", fontSize = 24.sp, color = Color.Gray)
+                Text(text = " | ", fontSize = 24.sp)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "Swimming", fontSize = 24.sp, color = Color(0xFF378ADD))
-                    Text(text = "${distanceNatation / 1000} km", fontSize = 16.sp)
+                    Text(text = "${"%.1f".format(distanceNatation / 1000)} km", fontSize = 16.sp)
                 }
 
-                Text(text = " | ", fontSize = 24.sp, color = Color.Gray)
+                Text(text = " | ", fontSize = 24.sp)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "Bike", fontSize = 24.sp, color = Color(0xFFBA7517))
-                    Text(text = "${distanceCycling / 1000} km", fontSize = 16.sp)
+                    Text(text = "${"%.1f".format(distanceCycling / 1000)} km", fontSize = 16.sp)
                 }
             }
 

@@ -17,46 +17,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 @Composable
 fun RunningScreen(onNavigate: () -> Unit) {
-
-    val context = LocalContext.current
+    val context = LocalContext.current // On accède aux ressources d'Android
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val scope = rememberCoroutineScope()
+    val distanceRunningExistante by dataStoreManager.distanceTotaleRunning.collectAsState(initial = 0.0)//On récupère l'ancienne valeur de la distance cumulée de running
 
     var is_running by remember { mutableStateOf(false) }
-    // Les variables qui s'affichent à l'écran
+
     var distanceTotale by remember { mutableStateOf(0.0) }
     var latitude by remember { mutableStateOf(0.0) }
     var longitude by remember { mutableStateOf(0.0) }
     var altitude by remember { mutableStateOf(0.0) }
     var vitesse by remember { mutableStateOf(0f) }
 
-    // Le service GPS
+
     val gps = remember { GPS(context) }
 
-    // Demande de permission GPS
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val permissionLauncher = rememberLauncherForActivityResult(//On récupère la permission GPS
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
@@ -69,13 +59,12 @@ fun RunningScreen(onNavigate: () -> Unit) {
             }
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.running),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    Box(
+        modifier = Modifier.fillMaxSize()
+        .fillMaxSize()
+        .background(Color(0xFF1D9E75))
+    ) {
+
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -83,7 +72,6 @@ fun RunningScreen(onNavigate: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // 🟦 Carré blanc autour des stats
             Box(
                 modifier = Modifier
                     .padding(16.dp)
@@ -93,13 +81,13 @@ fun RunningScreen(onNavigate: () -> Unit) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Distance : ${distanceTotale / 1000} km",
+                        text = "Distance : ${"%.1f".format(distanceTotale / 1000)} km",
                         fontSize = 20.sp,
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Vitesse : ${60 / vitesse} min/km",
+                        text = if (vitesse > 0 && vitesse < 12) "Vitesse : ${"%.1f".format(60 / vitesse)} min/km" else "Vitesse : -- min/km",
                         fontSize = 20.sp,
                         color = Color.Black
                     )
@@ -114,8 +102,11 @@ fun RunningScreen(onNavigate: () -> Unit) {
                     permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 } else {
                     gps.stopTracking()
-                    onNavigate()
                     is_running = false
+                    scope.launch {
+                        dataStoreManager.sauvegarderDistanceRunning(distanceTotale + distanceRunningExistante)
+                    }
+                    onNavigate()
                 }
             }) {
                 Text(if (!is_running) "Démarrer l'activité" else "Terminer l'activité")
